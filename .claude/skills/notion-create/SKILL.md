@@ -74,6 +74,47 @@ CREATE TABLE (
 学期系のセレクトを作る場合は阪大ターム制に合わせる:
 `MULTI_SELECT('春':yellow, '夏':orange, '秋':brown, '冬':default, '春夏':blue, '秋冬':purple, '通年':gray, '集中':red)`
 
+### 個別スキル用DBテンプレート（`skills-` リポジトリの各スキルで定義済み）
+
+`skills-` リポジトリの一部スキルは、自分専用のNotion DBスキーマを
+`references/notion_db_schema.md` として既に確定させている。これらは
+「Notion MCP接続時にこのスキーマでDBを作って」とスキル側から一度だけ提案される
+設計で、まだ実際には作成されていない（計画中）。notion-createから直接
+依頼された場合も、定義がずれないよう以下のテンプレートをそのまま使う。
+プロパティ定義の正本はあくまで `skills-` リポジトリ側なので、スキーマを
+変更するときは両方を同時に直す。
+
+#### 用語集DB（research-glossaryスキル用）
+正本: `skills-` リポジトリ `Academic/research-glossary/references/notion_db_schema.md`
+```sql
+CREATE TABLE (
+  "用語" TITLE,
+  "分野タグ" SELECT('プライバシー・監視':red, '動物倫理・人と動物':orange, '研究方法(質的)':blue, '研究方法(量的・統計)':purple, '学術一般':green, 'その他':gray),
+  "理解度" SELECT('説明できる':green, 'なんとなく':yellow, '要復習':red),
+  "出典" RICH_TEXT,
+  "追加日" DATE
+)
+```
+ページ本文はDBの構造ではなくスキル側テンプレート（一言定義/詳しい説明/使用例/関連用語/自分の研究との関わり）をそのまま貼る運用。作成後は命名規則（絵文字＋日本語）に合わせて表示名を検討し、data source IDを上のリレーション先ID一覧に追記する。
+
+#### タスクDB（task-triageスキル用）
+正本: `skills-` リポジトリ `personal/task-triage/references/notion_db_schema.md`
+```sql
+CREATE TABLE (
+  "タスク名" TITLE,
+  "カテゴリ" SELECT('仕事':blue, '大学院':purple, '私用':green),
+  "緊急度" SELECT('至急(今日中)':red, '今週':orange, 'それ以降・期限なし':gray),
+  "所要時間" SELECT('短(〜15分)':green, '中(〜1時間)':yellow, '長(1時間超)':red),
+  "期限" DATE,
+  "状況" SELECT('未着手':gray, '進行中':blue, '完了':green, '待ち':orange),
+  "待ち先" RICH_TEXT COMMENT '「待ち」のときのみ(例: ○○事務所の回答待ち)',
+  "最初の一手" RICH_TEXT COMMENT '長タスクのみ(15〜30分でできる最初の一歩)',
+  "出どころ" SELECT('思いつき':gray, 'ゼミ宿題':purple, '打合せ宿題':blue, 'その他':default),
+  "追加日" DATE
+)
+```
+完了タスクは削除・アーカイブせず、ビューのフィルタで隠すだけにする（スキル側の運用ルール）。作成後はdata source IDを上のリレーション先ID一覧に追記する。
+
 ## 「親アイテムごとの絞り込みビュー」を作る手順（重要）
 
 ビューDSLはリレーションフィルターを無反応で破棄するため、以下の手順で作る:
